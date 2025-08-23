@@ -1,10 +1,23 @@
 export default async function handler(req, res) {
+  // ✅ Libera CORS para qualquer origem
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // ✅ Trata requisição OPTIONS (pré-flight do navegador)
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  // ✅ Só aceita POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
   const { value } = req.body;
 
+  // ✅ Validação do valor
   if (!value || value < 50) {
     return res.status(400).json({ error: 'Valor mínimo é R$ 0,50' });
   }
