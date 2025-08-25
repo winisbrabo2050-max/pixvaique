@@ -16,6 +16,11 @@ export default async function handler(req, res) {
   const { id, status } = req.body;
   if (!id || !status) return res.status(400).json({ error: 'Dados inválidos' });
 
+  // ✅ Verifica se o status é 'paid' ou 'expired'
+  if (status !== 'paid' && status !== 'expired') {
+    return res.status(200).json({ ignored: true, motivo: 'Status não relevante para salvar' });
+  }
+
   try {
     await client.connect();
     const db = client.db('pixdb');
