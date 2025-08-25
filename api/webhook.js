@@ -5,6 +5,14 @@ const client = new MongoClient(process.env.MONGODB_URI);
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
+  // 🔒 Verificação do token de segurança
+  const tokenRecebido = req.headers['x-pushinpay-token'];
+  const tokenEsperado = process.env.PUSHINPAY_WEBHOOK_TOKEN;
+
+  if (!tokenRecebido || tokenRecebido !== tokenEsperado) {
+    return res.status(403).json({ error: 'Token de autenticação inválido' });
+  }
+
   const { id, status } = req.body;
   if (!id || !status) return res.status(400).json({ error: 'Dados inválidos' });
 
