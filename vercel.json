@@ -1,9 +1,11 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/gerar-pix.js", "use": "@vercel/node" }
+    { "src": "api/gerar-pix.js", "use": "@vercel/node" },
+    { "src": "api/consultPix.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/gerar-pix", "dest": "api/gerar-pix.js" }
+    { "src": "/api/gerar-pix", "dest": "api/gerar-pix.js" },
+    { "src": "/api/consultPix", "dest": "api/consultPix.js" }
   ]
 }
