@@ -25,17 +25,29 @@ export default async function handler(req, res) {
 
   const token = process.env.PUSHINPAY_TOKEN;
 
+  // Configura os cabeçalhos para a requisição
+  const myHeaders = {
+    'Authorization': `Bearer ${token}`,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  };
+
   try {
+    // Faz a requisição GET para a API da PushinPay
     const response = await fetch(`https://api.pushinpay.com.br/api/transactions/${id}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      }
+      headers: myHeaders
     });
 
+    // Verifica se a resposta foi bem-sucedida
+    if (!response.ok) {
+      const errorData = await response.json();
+      return res.status(response.status).json({ error: 'Erro ao consultar a transação', details: errorData });
+    }
+
+    // Obtém os dados da resposta
     const data = await response.json();
-    res.status(response.status).json(data);
+    res.status(200).json(data); // Retorna os dados da transação
   } catch (error) {
     res.status(500).json({ error: 'Erro ao conectar com PushinPay', detalhes: error.message });
   }
