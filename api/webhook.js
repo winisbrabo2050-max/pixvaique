@@ -1,7 +1,3 @@
-import { MongoClient } from 'mongodb';
-
-const client = new MongoClient(process.env.MONGODB_URI);
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -16,26 +12,25 @@ export default async function handler(req, res) {
   const { id, status } = req.body;
   if (!id || !status) return res.status(400).json({ error: 'Dados inválidos' });
 
-  // ✅ Verifica se o status é 'paid' ou 'expired'
-  if (status !== 'paid' && status !== 'expired') {
-    return res.status(200).json({ ignored: true, motivo: 'Status não relevante para salvar' });
-  }
+  // ✅ Monta a mensagem para o Discord
+  const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  const mensagem = {
+    content: `📢 Nova transação recebida!\n🆔 ID: \`${id}\`\n📌 Status: \`${status}\`\n🕒 Horário: ${new Date().toLocaleString()}`
+  };
 
   try {
-    await client.connect();
-    const db = client.db('pixdb');
-    const transacoes = db.collection('transacoes');
+    const resposta = await fetch(discordWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mensagem)
+    });
 
-    await transacoes.updateOne(
-      { id },
-      { $set: { status, updatedAt: new Date() } },
-      { upsert: true }
-    );
+    if (!resposta.ok) {
+      throw new Error(`Erro ao enviar para Discord: ${resposta.statusText}`);
+    }
 
-    res.status(200).json({ success: true });
+    res.status(200).json({ success: true, enviadoParaDiscord: true });
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao salvar no banco', detalhes: error.message });
-  } finally {
-    await client.close();
+    res.status(500).json({ error: 'Erro ao enviar para Discord', detalhes: error.message });
   }
 }
