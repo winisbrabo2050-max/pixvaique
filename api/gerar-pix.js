@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   const token = process.env.PUSHINPAY_TOKEN;
 
   // ✅ URL do webhook que receberá notificações de pagamento
-  const webhookUrl = 'https://pixvaique.vercel.app/api/webhook';
+  const webhookUrl = 'https://webhook.site/82fa7f49-a71d-4665-a1cc-191b764d3c07';
 
   try {
     const response = await fetch('https://api.pushinpay.com.br/api/pix/cashIn', {
