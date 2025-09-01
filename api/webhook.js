@@ -1,3 +1,5 @@
+import mysql from 'mysql2/promise';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -16,33 +18,35 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Token de autenticação inválido' });
   }
 
-  const { id, status } = req.body;
-  if (!id || !status) {
+  const { id: transaction_id, status } = req.body;
+  if (!transaction_id || !status) {
     console.warn('⚠️ Dados inválidos no corpo da requisição');
     return res.status(400).json({ error: 'Dados inválidos' });
   }
 
-  // ✅ Monta a mensagem para o Discord
-  const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
-  const mensagem = {
-    content: `📢 Nova transação recebida!\n🆔 ID: \`${id}\`\n📌 Status: \`${status}\`\n🕒 Horário: ${new Date().toLocaleString()}`
-  };
-
   try {
-    const resposta = await fetch(discordWebhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(mensagem)
+    // 🔗 Conexão com o banco MySQL
+    const connection = await mysql.createConnection({
+      host: process.env.MYSQL_HOST,
+      user: process.env.MYSQL_USER,
+      password: process.env.MYSQL_PASSWORD,
+      database: process.env.MYSQL_DATABASE
     });
 
-    if (!resposta.ok) {
-      throw new Error(`Erro ao enviar para Discord: ${resposta.statusText}`);
-    }
+    // 📝 Inserção ou atualização da transação
+    await connection.execute(
+      `INSERT INTO sua_tabela (transaction_id, status, created_at)
+       VALUES (?, ?, NOW())
+       ON DUPLICATE KEY UPDATE status = VALUES(status), created_at = NOW()`,
+      [transaction_id, status]
+    );
 
-    console.log('✅ Mensagem enviada com sucesso para o Discord');
-    res.status(200).json({ success: true, enviadoParaDiscord: true });
+    await connection.end();
+
+    console.log('✅ Transação registrada no banco com sucesso');
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error('❌ Erro ao enviar para Discord:', error.message);
-    res.status(500).json({ error: 'Erro ao enviar para Discord', detalhes: error.message });
+    console.error('❌ Erro ao salvar no MySQL:', error.message);
+    res.status(500).json({ error: 'Erro ao salvar no banco', detalhes: error.message });
   }
 }
