@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     'Content-Type': 'application/json',
     'x-vercel-token': 'token-segurozada'
   },
-  body: JSON.stringify({ transaction_id: id, status })
+  body: JSON.stringify({ transaction_id, status })
 });
 
 const respostaTexto = await response.text();
