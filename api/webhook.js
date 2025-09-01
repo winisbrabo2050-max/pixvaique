@@ -28,13 +28,16 @@ export default async function handler(req, res) {
 
     // 🌐 Envia os dados para o script PHP
     const response = await fetch('https://vaiqueganha.kesug.com/salvar-transacao.php', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-vercel-token': phpToken
-      },
-      body: JSON.stringify({ transaction_id, status })
-    });
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-vercel-token': 'token-segurozada'
+  },
+  body: JSON.stringify({ transaction_id: id, status })
+});
+
+const respostaTexto = await response.text();
+console.log('🔁 Resposta do PHP:', respostaTexto);
 
     if (!response.ok) {
       throw new Error(`Erro ao enviar para PHP: ${response.statusText}`);
