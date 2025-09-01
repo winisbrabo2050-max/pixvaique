@@ -1,5 +1,3 @@
-import mysql from 'mysql2/promise';
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -9,7 +7,7 @@ export default async function handler(req, res) {
   console.log('🔑 Token recebido:', req.headers['x-pushinpay-token']);
   console.log('📦 Body recebido:', req.body);
 
-  // 🔒 Verificação do token de segurança
+  // 🔒 Verificação do token de segurança da PushinPay
   const tokenRecebido = req.headers['x-pushinpay-token'];
   const tokenEsperado = process.env.PUSHINPAY_WEBHOOK_TOKEN;
 
@@ -25,28 +23,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 🔗 Conexão com o banco MySQL
-    const connection = await mysql.createConnection({
-      host: process.env.MYSQL_HOST,
-      user: process.env.MYSQL_USER,
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DATABASE
+    // 🔐 Token secreto para autenticar com seu script PHP
+    const phpToken = process.env.VERCEL_TO_PHP_TOKEN;
+
+    // 🌐 Envia os dados para o script PHP
+    const response = await fetch('https://vaiqueganha.kesug.com/salvar-transacao.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-vercel-token': phpToken
+      },
+      body: JSON.stringify({ transaction_id, status })
     });
 
-    // 📝 Inserção ou atualização da transação
-    await connection.execute(
-      `INSERT INTO sua_tabela (transaction_id, status, created_at)
-       VALUES (?, ?, NOW())
-       ON DUPLICATE KEY UPDATE status = VALUES(status), created_at = NOW()`,
-      [transaction_id, status]
-    );
+    if (!response.ok) {
+      throw new Error(`Erro ao enviar para PHP: ${response.statusText}`);
+    }
 
-    await connection.end();
-
-    console.log('✅ Transação registrada no banco com sucesso');
+    console.log('✅ Transação enviada com sucesso para o PHP');
     res.status(200).json({ success: true });
   } catch (error) {
-    console.error('❌ Erro ao salvar no MySQL:', error.message);
-    res.status(500).json({ error: 'Erro ao salvar no banco', detalhes: error.message });
+    console.error('❌ Erro ao enviar para PHP:', error.message);
+    res.status(500).json({ error: 'Erro ao enviar para PHP', detalhes: error.message });
   }
 }
