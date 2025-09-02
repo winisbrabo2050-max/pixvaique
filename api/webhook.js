@@ -11,7 +11,6 @@ export default async function handler(req, res) {
   console.log('🧾 Headers recebidos:', req.headers);
   console.log('📦 Body recebido:', req.body);
 
-  // 🔒 Verificação do token de segurança
   const tokenRecebido = req.headers['x-pushinpay-token'];
   const tokenEsperado = process.env.PUSHINPAY_WEBHOOK_TOKEN;
 
@@ -27,7 +26,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Dados inválidos' });
   }
 
-  // 📝 Insere no Supabase
+  // 🕒 Ajusta o horário para São Paulo (UTC-3)
+  const now = new Date();
+  const offsetMs = -3 * 60 * 60 * 1000;
+  const saoPauloTime = new Date(now.getTime() + offsetMs).toISOString();
+
   try {
     const { data, error } = await supabase
       .from('transacoes')
@@ -35,7 +38,7 @@ export default async function handler(req, res) {
         {
           transaction_id: id,
           status,
-          created_at: new Date().toISOString()
+          created_at: saoPauloTime
         }
       ])
       .select();
