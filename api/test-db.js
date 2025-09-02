@@ -1,30 +1,27 @@
-import { MongoClient } from 'mongodb';
+import { createClient } from '@supabase/supabase-js';
 
-const uri = process.env.MONGODB_URI; // Defina essa variável no painel do Vercel
-const client = new MongoClient(uri);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // ou sua API Key pública
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
   try {
-    await client.connect();
-    const db = client.db('pixdb'); // substitua pelo nome do seu banco
-    const collection = db.collection('transacoes');
+    const { data, error } = await supabase
+      .from('transacoes')
+      .insert([
+        {
+          transaction_id: 'teste123',
+          status: 'paid',
+          created_at: new Date().toISOString()
+        }
+      ]);
 
-    const resultado = await collection.insertOne({
-      transaction_id: 'teste123',
-      status: 'paid',
-      created_at: new Date()
-    });
+    if (error) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
 
-    res.status(200).json({
-      success: true,
-      insertedId: resultado.insertedId
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  } finally {
-    await client.close();
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 }
