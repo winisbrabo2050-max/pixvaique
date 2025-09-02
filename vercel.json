@@ -5,7 +5,7 @@
     { "src": "api/consultPix.js", "use": "@vercel/node" },
     { "src": "api/webhook.js", "use": "@vercel/node" },
     { "src": "api/status.js", "use": "@vercel/node" },
-    { "src": "api/test-db.js", "use": "@vercel/node" }
+    { "src": "api/test-db.js", "use": "@vercel/node" },
     { "src": "api/get-transacoes.js", "use": "@vercel/node" }
   ],
   "routes": [
@@ -13,7 +13,7 @@
     { "src": "/api/consultPix", "dest": "api/consultPix.js" },
     { "src": "/api/webhook", "dest": "api/webhook.js" },
     { "src": "/api/status", "dest": "api/status.js" },
-    { "src": "/api/test-db", "dest": "api/test-db.js" }
+    { "src": "/api/test-db", "dest": "api/test-db.js" },
     { "src": "/api/get-transacoes", "dest": "api/get-transacoes.js" }
   ]
 }
