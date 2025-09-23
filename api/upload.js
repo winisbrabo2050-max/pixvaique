@@ -48,7 +48,7 @@
 
        try {
            // Configurações do Filebin
-           const BIN_NAME = 'candidaturas';  // Bin fixo para currículos (cria se não existir)
+           const BIN_NAME = 'candidaturas8089';  // Bin fixo para currículos (cria se não existir)
            const FILEBIN_BASE_URL = 'https://filebin.net';
            const timestamp = Date.now();
            const ext = file.name.split('.').pop();  // Extensão original
