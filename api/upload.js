@@ -42,9 +42,9 @@
        const cpf = fields.cpf ? fields.cpf[0] : null;
        const file = files.curriculum_file ? files.curriculum_file[0] : null;
 
-       const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+       const DISCORD_WEBHOOK_URL2 = process.env.DISCORD_WEBHOOK_URL2;
 
-       if (!file || !email || !cpf || !DISCORD_WEBHOOK_URL) {
+       if (!file || !email || !cpf || !DISCORD_WEBHOOK_URL2) {
            // Limpa arquivo temp se existir
            if (file && file.filepath) fs.unlinkSync(file.filepath);
            return res.status(400).json({ error: 'Dados incompletos: arquivo, email e CPF são obrigatórios.' });
@@ -124,7 +124,7 @@
                ],
            };
 
-           const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
+           const discordResponse = await fetch(DISCORD_WEBHOOK_URL2, {
                method: 'POST',
                headers: { 'Content-Type': 'application/json' },
                body: JSON.stringify(discordPayload),
