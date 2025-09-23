@@ -1,4 +1,4 @@
-{
+// {
   "version": 2,
   "builds": [
     { "src": "api/gerar-pix.js", "use": "@vercel/node" },
