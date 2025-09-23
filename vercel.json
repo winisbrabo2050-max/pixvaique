@@ -19,5 +19,5 @@
     { "src": "/api/get-transacoes", "dest": "api/get-transacoes.js" },
     { "src": "/api/auth", "dest": "api/auth.js" },
     { "src": "/api/upload", "dest": "api/upload.js" }
-  ],
+  ]
 }
