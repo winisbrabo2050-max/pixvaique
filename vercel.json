@@ -1,22 +1,24 @@
-   {
-     "version": 2,
-     "builds": [
-       { "src": "api/gerar-pix.js", "use": "@vercel/node" },
-       { "src": "api/consultPix.js", "use": "@vercel/node" },
-       { "src": "api/webhook.js", "use": "@vercel/node" },
-       { "src": "api/status.js", "use": "@vercel/node" },
-       { "src": "api/test-db.js", "use": "@vercel/node" },
-       { "src": "api/get-transacoes.js", "use": "@vercel/node" },
-       { "src": "api/upload.js", "use": "@vercel/node" }
-     ],
-     "routes": [
-       { "src": "/api/gerar-pix", "dest": "api/gerar-pix.js" },
-       { "src": "/api/consultPix", "dest": "api/consultPix.js" },
-       { "src": "/api/webhook", "dest": "api/webhook.js" },
-       { "src": "/api/status", "dest": "api/status.js" },
-       { "src": "/api/test-db", "dest": "api/test-db.js" },
-       { "src": "/api/get-transacoes", "dest": "api/get-transacoes.js" },
-       { "src": "/api/upload", "dest": "api/upload.js" }
-     ]
-   }
-   
+     {
+       "version": 2,
+       "builds": [
+         { "src": "api/gerar-pix.js", "use": "@vercel/node" },
+         { "src": "api/consultPix.js", "use": "@vercel/node" },
+         { "src": "api/webhook.js", "use": "@vercel/node" },
+         { "src": "api/status.js", "use": "@vercel/node" },
+         { "src": "api/test-db.js", "use": "@vercel/node" },
+         { "src": "api/get-transacoes.js", "use": "@vercel/node" },
+         { "src": "api/upload.js", "use": "@vercel/node" },
+         { "src": "api/upload-cadastro.js", "use": "@vercel/node" }
+       ],
+       "routes": [
+         { "src": "/api/gerar-pix", "dest": "api/gerar-pix.js" },
+         { "src": "/api/consultPix", "dest": "api/consultPix.js" },
+         { "src": "/api/webhook", "dest": "api/webhook.js" },
+         { "src": "/api/status", "dest": "api/status.js" },
+         { "src": "/api/test-db", "dest": "api/test-db.js" },
+         { "src": "/api/get-transacoes", "dest": "api/get-transacoes.js" },
+         { "src": "/api/upload", "dest": "api/upload.js" },
+         { "src": "/api/upload-cadastro", "dest": "api/upload-cadastro.js" }
+       ]
+     }
+     
