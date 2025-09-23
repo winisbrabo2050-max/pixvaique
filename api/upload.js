@@ -51,7 +51,13 @@
        }
 
        // Validações básicas no server
-       const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+           const allowedTypes = [
+        'application/pdf', 
+        'image/png', 
+        'image/jpeg', 
+        'image/jpg',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'  // MIME para DOCX
+    ];   
        const mimeType = file.mimetype || '';
        if (!allowedTypes.includes(mimeType)) {
            fs.unlinkSync(file.filepath);  // Limpa temp
