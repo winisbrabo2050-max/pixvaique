@@ -1,4 +1,4 @@
-   // api/upload.js - Proxy para upload no Filebin + Discord (com formidable para FormData)
+   // api/upload.js - Proxy para upload no Filebin + Discord (sem lock no bin)
    import formidable from 'formidable';
    import fs from 'fs';  // Para limpar arquivos temporários
 
@@ -21,12 +21,12 @@
            return res.status(405).json({ error: 'Method Not Allowed' });
        }
 
-       // Parse FormData com formidable (substitui req.formData())
+       // Parse FormData com formidable
        const form = formidable({
            multiples: false,  // Um arquivo só
            maxFileSize: 5 * 1024 * 1024,  // 5MB
            keepExtensions: true,
-           uploadDir: '/tmp',  // Pasta temp no serverless (Vercel limpa auto)
+           uploadDir: '/tmp',  // Pasta temp no serverless
        });
 
        let fields, files;
@@ -77,14 +77,14 @@
            const uploadResponse = await fetch(`${FILEBIN_BASE_URL}/${BIN_NAME}/${filename}`, {
                method: 'POST',
                headers: {
-                   'Content-Type': mimeType || 'application/octet-stream',
+                   'Content-Type': mimeType || 'application/octet-stream',  // PDF: application/pdf ou octet-stream
                },
                body: fileBuffer,
            });
 
            if (!uploadResponse.ok) {
                const errorText = await uploadResponse.text();
-               console.error('Erro Filebin:', errorText);
+               console.error('Erro Filebin:', errorText, 'Status:', uploadResponse.status);  // Log para debug
                fs.unlinkSync(file.filepath);  // Limpa temp
                return res.status(uploadResponse.status).json({ error: 'Falha no upload para Filebin: ' + errorText });
            }
@@ -95,8 +95,8 @@
            const fileUrl = `${FILEBIN_BASE_URL}/${BIN_NAME}/${filename}`;
            const filesize = uploadData.size || file.size;
 
-           // Opcional: Lock o bin para read-only
-           await fetch(`${FILEBIN_BASE_URL}/${BIN_NAME}`, { method: 'PUT' });
+           // REMOVIDO: Lock o bin (causava 405 em uploads subsequentes)
+           // await fetch(`${FILEBIN_BASE_URL}/${BIN_NAME}`, { method: 'PUT' });
 
            // Limpa arquivo temp
            fs.unlinkSync(file.filepath);
@@ -116,6 +116,7 @@
                            { name: 'Currículo', value: `[Baixar](${fileUrl})`, inline: false },
                            { name: 'Nome do Arquivo', value: filename, inline: false },
                            { name: 'Tamanho', value: `${(filesize / 1024).toFixed(2)} KB`, inline: true },
+                           { name: 'Tipo', value: mimeType, inline: true },  // Adicionado para debug (PDF/PNG)
                        ],
                        timestamp: new Date().toISOString(),
                        footer: { text: 'Filebin via Vercel Proxy' },
@@ -148,10 +149,9 @@
        }
    }
 
-   // Configura formidable para não usar uploadDir se possível, mas necessário para files
    export const config = {
        api: {
-           bodyParser: false,  // Desabilita bodyParser padrão do Vercel para permitir multipart
+           bodyParser: false,  // Essencial para multipart/form-data
        },
    };
    
