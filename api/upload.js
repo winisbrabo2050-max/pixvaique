@@ -1,4 +1,7 @@
-   // api/upload.js - Proxy para upload no Filebin + Discord (sem auth)
+   // api/upload.js - Proxy para upload no Filebin + Discord (com formidable para FormData)
+   import formidable from 'formidable';
+   import fs from 'fs';  // Para limpar arquivos temporários
+
    export default async function handler(req, res) {
        // Configuração de CORS manual
        const allowedOrigin = 'https://admin-thofer.wuaze.com';  // <-- SUBSTITUA PELO SEU DOMÍNIO EXATO NO INFINITYFREE
@@ -18,65 +21,85 @@
            return res.status(405).json({ error: 'Method Not Allowed' });
        }
 
-       // Parse FormData
-       let formData;
+       // Parse FormData com formidable (substitui req.formData())
+       const form = formidable({
+           multiples: false,  // Um arquivo só
+           maxFileSize: 5 * 1024 * 1024,  // 5MB
+           keepExtensions: true,
+           uploadDir: '/tmp',  // Pasta temp no serverless (Vercel limpa auto)
+       });
+
+       let fields, files;
        try {
-           formData = await req.formData();
+           [fields, files] = await form.parse(req);
        } catch (error) {
-           return res.status(400).json({ error: 'Erro ao processar FormData.' });
+           console.error('Erro no formidable:', error);
+           return res.status(400).json({ error: 'Erro ao processar o formulário. Verifique o arquivo.' });
        }
 
-       const file = formData.get('curriculum_file');
-       const email = formData.get('email');
-       const cpf = formData.get('cpf');
+       // Extrai dados
+       const email = fields.email ? fields.email[0] : null;
+       const cpf = fields.cpf ? fields.cpf[0] : null;
+       const file = files.curriculum_file ? files.curriculum_file[0] : null;
 
        const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
        if (!file || !email || !cpf || !DISCORD_WEBHOOK_URL) {
+           // Limpa arquivo temp se existir
+           if (file && file.filepath) fs.unlinkSync(file.filepath);
            return res.status(400).json({ error: 'Dados incompletos: arquivo, email e CPF são obrigatórios.' });
        }
 
-       // Validações básicas no server (opcional)
+       // Validações básicas no server
        const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-       const maxSize = 5 * 1024 * 1024; // 5MB
-       if (!allowedTypes.includes(file.type)) {
+       const mimeType = file.mimetype || '';
+       if (!allowedTypes.includes(mimeType)) {
+           fs.unlinkSync(file.filepath);  // Limpa temp
            return res.status(400).json({ error: 'Tipo de arquivo inválido: PDF, PNG, JPEG ou JPG.' });
        }
-       if (file.size > maxSize) {
+       if (file.size > 5 * 1024 * 1024) {
+           fs.unlinkSync(file.filepath);
            return res.status(400).json({ error: 'Arquivo muito grande: máximo 5MB.' });
        }
 
        try {
            // Configurações do Filebin
-           const BIN_NAME = 'candidaturas8089';  // Bin fixo para currículos (cria se não existir)
+           const BIN_NAME = 'candidaturas8089';  // Bin fixo
            const FILEBIN_BASE_URL = 'https://filebin.net';
            const timestamp = Date.now();
-           const ext = file.name.split('.').pop();  // Extensão original
-           const filename = `curriculo-${cpf.replace(/\D/g, '')}-${timestamp}.${ext}`;  // Único por CPF + timestamp
+           const ext = file.originalFilename ? file.originalFilename.split('.').pop() : 'pdf';
+           const filename = `curriculo-${cpf.replace(/\D/g, '')}-${timestamp}.${ext}`;
 
-           // Upload para Filebin: POST /{bin}/{filename} com body = arquivo
+           // Lê o arquivo temp como buffer para upload
+           const fileBuffer = fs.readFileSync(file.filepath);
+
+           // Upload para Filebin: POST /{bin}/{filename} com body = buffer
            const uploadResponse = await fetch(`${FILEBIN_BASE_URL}/${BIN_NAME}/${filename}`, {
                method: 'POST',
                headers: {
-                   'Content-Type': file.type || 'application/octet-stream',
+                   'Content-Type': mimeType || 'application/octet-stream',
                },
-               body: await file.arrayBuffer(),  // Converte file para buffer (body binário)
+               body: fileBuffer,
            });
 
            if (!uploadResponse.ok) {
                const errorText = await uploadResponse.text();
                console.error('Erro Filebin:', errorText);
+               fs.unlinkSync(file.filepath);  // Limpa temp
                return res.status(uploadResponse.status).json({ error: 'Falha no upload para Filebin: ' + errorText });
            }
 
-           const uploadData = await uploadResponse.json();  // Response 201 com JSON (da doc)
+           const uploadData = await uploadResponse.json();  // 201 com JSON
 
-           // URL do arquivo (da doc, response inclui metadata; assumimos estrutura padrão)
+           // URL do arquivo
            const fileUrl = `${FILEBIN_BASE_URL}/${BIN_NAME}/${filename}`;
-           const filesize = uploadData.size || file.size;  // Se response tiver size
+           const filesize = uploadData.size || file.size;
 
-           // Opcional: Lock o bin para read-only (PUT /{bin})
+           // Opcional: Lock o bin para read-only
            await fetch(`${FILEBIN_BASE_URL}/${BIN_NAME}`, { method: 'PUT' });
+
+           // Limpa arquivo temp
+           fs.unlinkSync(file.filepath);
 
            // Notificação para Discord
            const discordPayload = {
@@ -120,7 +143,15 @@
 
        } catch (error) {
            console.error('Erro no upload Filebin:', error);
+           if (file && file.filepath) fs.unlinkSync(file.filepath);  // Limpa temp em erro
            res.status(500).json({ error: 'Erro interno no servidor.' });
        }
    }
+
+   // Configura formidable para não usar uploadDir se possível, mas necessário para files
+   export const config = {
+       api: {
+           bodyParser: false,  // Desabilita bodyParser padrão do Vercel para permitir multipart
+       },
+   };
    
