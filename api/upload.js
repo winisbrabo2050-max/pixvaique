@@ -64,7 +64,7 @@
 
        try {
            // Configurações do Filebin
-           const BIN_NAME = 'candidaturas8089';  // Bin fixo
+           const BIN_NAME = 'candidaturas808980';  // Bin fixo
            const FILEBIN_BASE_URL = 'https://filebin.net';
            const timestamp = Date.now();
            const ext = file.originalFilename ? file.originalFilename.split('.').pop() : 'pdf';
