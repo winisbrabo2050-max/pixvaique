@@ -1,6 +1,13 @@
 {
+  "name": "pixvaique",
+  "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "mysql2": "^3.14.4",
-    "@supabase/supabase-js": "^2.0.0"
+    "@supabase/supabase-js": "^2.0.0",
+    "formidable": "^3.5.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
