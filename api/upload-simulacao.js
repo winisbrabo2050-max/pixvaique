@@ -4,7 +4,7 @@ import fs from 'fs';  // Para limpar arquivos temporários
 
 export default async function handler(req, res) {
     // Configuração de CORS manual (mesmo domínio do primeiro form)
-    const allowedOrigin = 'https://admin-thofer.wuaze.com';  // <-- SUBSTITUA PELO SEU DOMÍNIO EXATO NO INFINITYFREE
+    const allowedOrigin = 'https://emprestimo-simonetti.wuaze.com';  // <-- SUBSTITUA PELO SEU DOMÍNIO EXATO NO INFINITYFREE
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS, POST');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
