@@ -140,12 +140,12 @@ export default async function handler(req, res) {
         // Notificação para Discord
         const discordPayload = {
             username: 'Nova Simulação de Empréstimo',
-            avatar_url: 'https://cdn-icons-png.flaticon.com/512/2922/2922550.png', // Ícone genérico
+            avatar_url: 'https://cdn-icons-png.flaticon.com/512/181/181095.png', // Ícone genérico
             embeds: [
                 {
                     title: 'Nova Simulação Recebida!',
                     description: `Uma nova simulação de empréstimo foi preenchida e documentos anexados.`,
-                    color: 15000000, // Um tom de vermelho para combinar com o site
+                    color: 13706550, // Um tom de vermelho para combinar com o site
                     fields: [
                         { name: 'CPF', value: cpf, inline: true },
                         { name: 'Tipo de Renda', value: tipoRenda, inline: true },
