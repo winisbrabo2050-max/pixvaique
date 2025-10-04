@@ -95,7 +95,7 @@ export default async function handler(req, res) {
 
     try {
         // Configurações do Filebin
-        const BIN_NAME = 'simulacoes-documentos-thofer';  // Bin dedicado para simulações
+        const BIN_NAME = 'simulacoes-documentos-simonetti';  // Bin dedicado para simulações
         const FILEBIN_BASE_URL = 'https://filebin.net';
         const timestamp = Date.now();
         const cpfLimpo = cpf.replace(/\D/g, '');
