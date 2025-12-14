@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
   // ✅ Envia para o PHP no InfinityFree
   try {
-    const respostaPHP = await fetch("https://SEUDOMINIO.infinityfreeapp.com/webhook.php", {
+    const respostaPHP = await fetch("https://vaiqueganha.kesug.com/webhook.php", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
