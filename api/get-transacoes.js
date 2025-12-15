@@ -1,3 +1,7 @@
+export const config = {
+  runtime: "nodejs"
+};
+
 import { createClient } from '@supabase/supabase-js';
 import mysql from 'mysql2/promise';
 import cookie from "cookie";
@@ -19,7 +23,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ✅ LER COOKIES MANUALMENTE (Vercel NÃO faz isso sozinho)
+    // ✅ LER COOKIES MANUALMENTE
     const cookies = cookie.parse(req.headers.cookie || "");
     const transaction_id = cookies.idtransacao;
 
