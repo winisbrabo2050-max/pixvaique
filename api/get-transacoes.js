@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import mysql from 'mysql2/promise';
+import cookie from "cookie";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -18,8 +19,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ✅ 1. Lê cookie
-    const transaction_id = req.cookies.idtransacao;
+    // ✅ LER COOKIES MANUALMENTE (Vercel NÃO faz isso sozinho)
+    const cookies = cookie.parse(req.headers.cookie || "");
+    const transaction_id = cookies.idtransacao;
 
     if (!transaction_id) {
       return res.status(400).json({
@@ -28,7 +30,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ 2. Consulta Supabase
+    // ✅ Consulta Supabase
     const { data, error } = await supabase
       .from("transacoes")
       .select("status")
@@ -44,7 +46,6 @@ export default async function handler(req, res) {
 
     const status = data.status;
 
-    // ✅ 3. Se não estiver pago, só retorna
     if (status !== "paid") {
       return res.status(200).json({
         success: true,
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ 4. Atualiza MySQL do InfinityFree
+    // ✅ Atualiza MySQL do InfinityFree
     const conn = await mysql.createConnection({
       host: process.env.MYSQL_HOST,
       user: process.env.MYSQL_USER,
@@ -68,7 +69,6 @@ export default async function handler(req, res) {
 
     await conn.end();
 
-    // ✅ 5. Retorna sucesso
     return res.status(200).json({
       success: true,
       status: "paid",
