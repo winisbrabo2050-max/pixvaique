@@ -7,8 +7,18 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
+  // ✅ CORS
+  res.setHeader("Access-Control-Allow-Origin", "https://vaiqueganha.kesug.com");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
-    // ✅ 1. Lê o cookie idtransacao
+    // ✅ 1. Lê cookie
     const transaction_id = req.cookies.idtransacao;
 
     if (!transaction_id) {
@@ -18,7 +28,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ 2. Consulta o Supabase
+    // ✅ 2. Consulta Supabase
     const { data, error } = await supabase
       .from("transacoes")
       .select("status")
@@ -34,7 +44,7 @@ export default async function handler(req, res) {
 
     const status = data.status;
 
-    // ✅ 3. Se não estiver pago, apenas retorna
+    // ✅ 3. Se não estiver pago, só retorna
     if (status !== "paid") {
       return res.status(200).json({
         success: true,
@@ -43,7 +53,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ 4. Conecta no MySQL do InfinityFree
+    // ✅ 4. Atualiza MySQL do InfinityFree
     const conn = await mysql.createConnection({
       host: process.env.MYSQL_HOST,
       user: process.env.MYSQL_USER,
@@ -51,7 +61,6 @@ export default async function handler(req, res) {
       database: process.env.MYSQL_DB
     });
 
-    // ✅ 5. Atualiza a tabela gerados
     const [result] = await conn.execute(
       "UPDATE gerados SET status = 'paid' WHERE id_pix = ?",
       [transaction_id]
@@ -59,7 +68,7 @@ export default async function handler(req, res) {
 
     await conn.end();
 
-    // ✅ 6. Retorna sucesso
+    // ✅ 5. Retorna sucesso
     return res.status(200).json({
       success: true,
       status: "paid",
