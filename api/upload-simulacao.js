@@ -99,24 +99,27 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Configurações do Filebin
-        const BIN_NAME = 'simulacoes-documentos-simonetti';  // Bin dedicado para simulações
-        const FILEBIN_BASE_URL = 'https://filebin.net';
+        // *** MUDANÇA PRINCIPAL: Gerar um nome de bin único para cada submissão ***
         const timestamp = Date.now();
         const cpfLimpo = cpf.replace(/\D/g, '');
+        const BIN_NAME = `simulacao-${cpfLimpo}-${timestamp}`; // Nome único para cada envio
+        const FILEBIN_BASE_URL = 'https://filebin.net';
+
+        console.log(`Criando um bin único para esta submissão: ${BIN_NAME}`);
 
         // Função auxiliar para upload de um arquivo
         async function uploadToFilebin(file, prefix) {
             if (!file) return null; // Retorna null se o arquivo não for fornecido
 
-            const ext = file.originalFilename ? file.originalFilename.split('.').pop() : 'bin'; // Default para 'bin' se não tiver extensão
-            const filename = `${prefix}-${cpfLimpo}-${timestamp}.${ext}`;
+            const ext = file.originalFilename ? file.originalFilename.split('.').pop() : 'bin';
+            // O nome do arquivo pode ser mais simples, pois o bin já é único
+            const filename = `${prefix}.${ext}`;
             const fileBuffer = fs.readFileSync(file.filepath);
 
             const uploadResponse = await fetch(`${FILEBIN_BASE_URL}/${BIN_NAME}/${filename}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': file.mimetype || 'application/octet-stream', // Default para octet-stream
+                    'Content-Type': file.mimetype || 'application/octet-stream',
                 },
                 body: fileBuffer,
             });
@@ -162,7 +165,7 @@ export default async function handler(req, res) {
                         { name: 'Foto segurando documento', value: `[Visualizar](${linkFotoSegurandoDocumento})`, inline: false },
                     ],
                     timestamp: new Date().toISOString(),
-                    footer: { text: 'Filebin via Vercel Proxy' },
+                    footer: { text: `Bin: ${BIN_NAME}` }, // Adiciona o nome do bin para referência
                 },
             ],
         };
