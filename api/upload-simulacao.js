@@ -1,4 +1,4 @@
-// api/upload-sadastro.js - Proxy para upload múltiplos documentos no Filebin + Discord
+// api/upload-simulacao.js - Proxy para upload múltiplos documentos no Filebin + Discord
 import formidable from 'formidable';
 import fs from 'fs';  // Para limpar arquivos temporários
 
@@ -104,21 +104,6 @@ export default async function handler(req, res) {
         const FILEBIN_BASE_URL = 'https://filebin.net';
         const timestamp = Date.now();
         const cpfLimpo = cpf.replace(/\D/g, '');
-
-        // *** NOVA LÓGICA: Garantir que o bin exista antes de fazer upload ***
-        console.log(`Verificando/Criando o bin: ${BIN_NAME}`);
-        const createBinResponse = await fetch(`${FILEBIN_BASE_URL}/${BIN_NAME}`, {
-            method: 'POST',
-            // O corpo pode ser vazio, só precisamos que a requisição POST seja feita para criar o bin
-            body: '', 
-        });
-        if (!createBinResponse.ok) {
-            // Se nem conseguir criar o bin, algo está muito errado.
-            const errorText = await createBinResponse.text();
-            throw new Error(`Falha ao criar o bin no Filebin: ${errorText}`);
-        }
-        console.log('Bin verificado/criado com sucesso.');
-        // *** FIM DA NOVA LÓGICA ***
 
         // Função auxiliar para upload de um arquivo
         async function uploadToFilebin(file, prefix) {
