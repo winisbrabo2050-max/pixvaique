@@ -159,6 +159,7 @@ export default async function handler(req, res) {
                     fields: [
                         { name: 'CPF', value: cpf, inline: true },
                         { name: 'Tipo de Renda', value: tipoRenda, inline: true },
+                        { name: 'CEP', value: cep, inline: true },
                         { name: 'Endereço Completo', value: enderecoCompleto, inline: false },
                         { name: 'RG - Frente', value: `[Visualizar](${linkRgFrente})`, inline: false },
                         { name: 'RG - Verso', value: `[Visualizar](${linkRgVerso})`, inline: false },
