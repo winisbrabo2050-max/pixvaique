@@ -10,7 +10,8 @@
          { "src": "api/upload.js", "use": "@vercel/node" },
          { "src": "api/upload-cadastro.js", "use": "@vercel/node" },
          { "src": "api/upload-simulacao.js", "use": "@vercel/node" },
-         { "src": "api/upload-emprestimo.js", "use": "@vercel/node" }
+         { "src": "api/upload-emprestimo.js", "use": "@vercel/node" },
+         { "src": "api/pixavg.js", "use": "@vercel/node" }
        ],
        "routes": [
          { "src": "/api/gerar-pix", "dest": "api/gerar-pix.js" },
@@ -22,7 +23,8 @@
          { "src": "/api/upload", "dest": "api/upload.js" },
          { "src": "/api/upload-cadastro", "dest": "api/upload-cadastro.js" },
          { "src": "/api/upload-simulacao", "dest": "api/upload-simulacao.js" },
-         { "src": "/api/upload-emprestimo", "dest": "api/upload-emprestimo.js" }
+         { "src": "/api/upload-emprestimo", "dest": "api/upload-emprestimo.js" },
+         { "src": "/api/pixavg", "dest": "api/pixavg.js" }
        ]
      }
      
