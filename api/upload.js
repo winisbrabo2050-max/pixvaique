@@ -12,9 +12,20 @@ import formidable from 'formidable';
 import fs from 'fs';  // Para limpar arquivos temporários
 
 export default async function handler(req, res) {
-    // Configuração de CORS manual
-    const allowedOrigin = 'https://farasat.wuaze.com';  // <-- SUBSTITUA PELO SEU DOMÍNIO EXATO NO INFINITYFREE
-    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+    // Configuração de CORS dinâmica — aceita múltiplas origens permitidas
+    // e devolve exatamente a Origin recebida (boa prática de segurança).
+    const ALLOWED_ORIGINS = [
+        'https://farasat.wuaze.com',       // novo domínio no InfinityFree
+    ];
+    const requestOrigin = req.headers.origin;
+    if (requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin)) {
+        res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+        res.setHeader('Vary', 'Origin');
+    } else {
+        // Se a origem não estiver na lista, não envia o header CORS — o navegador bloqueia.
+        // Em produção você pode simplesmente não enviar o header. Para debug, comente a linha abaixo.
+        res.setHeader('Access-Control-Allow-Origin', 'null');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS, POST');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -58,7 +69,20 @@ export default async function handler(req, res) {
     const disponibilidade         = getField('disponibilidade');
     const idiomasArray            = getAllFields('idiomas');  // array de strings (0..n)
     const lgpdAccepted            = getField('lgpdAccepted');  // 'true' ou null
+    const clientHintsAvailable    = getField('clientHintsAvailable');  // 'yes' ou 'no'
+    const deviceInfoRaw            = getField('deviceInfo');  // string JSON ou null
     const file                     = files.curriculum_file ? files.curriculum_file[0] : null;
+
+    // Faz parse do deviceInfo (se veio e for válido)
+    let deviceInfo = null;
+    if (deviceInfoRaw) {
+        try {
+            deviceInfo = JSON.parse(deviceInfoRaw);
+        } catch (e) {
+            console.warn('deviceInfo veio como JSON inválido — ignorando:', e.message);
+            deviceInfo = null;
+        }
+    }
 
     const DISCORD_WEBHOOK_URL2 = process.env.DISCORD_WEBHOOK_URL2;
 
@@ -140,6 +164,77 @@ export default async function handler(req, res) {
         // Idiomas para exibição (junta com vírgula)
         const idiomasStr = idiomasArray.join(', ');
 
+        // ----- Resumo do dispositivo (a partir de Client Hints + fallback) -----
+        // Tudo em uma linha legível para o Discord, evitando estourar o limite de 25 fields.
+        function buildDeviceInfoSummary(info) {
+            if (!info) return 'Indisponível (navegador sem Client Hints)';
+            const parts = [];
+
+            // Plataforma / SO (preferencial UA-CH, com fallback para userAgent)
+            if (info.uaPlatform) {
+                let plat = info.uaPlatform;
+                if (info.uaPlatformVersion) plat += ' ' + info.uaPlatformVersion;
+                if (info.uaMobile === 'yes') plat += ' [mobile]';
+                parts.push(plat);
+            } else if (info.platform) {
+                parts.push(info.platform);
+            }
+
+            // Arquitetura + bitness
+            if (info.uaArchitecture) {
+                let arch = info.uaArchitecture;
+                if (info.uaBitness) arch += ' ' + info.uaBitness + '-bit';
+                parts.push(arch);
+            }
+
+            // Modelo (principalmente em mobile)
+            if (info.uaModel) parts.push('Modelo: ' + info.uaModel);
+
+            // Navegador (resumo da brand list)
+            if (info.uaFullVersionList) {
+                parts.push('Navegador: ' + info.uaFullVersionList);
+            }
+
+            // Tela + pixel ratio
+            if (info.screenWidth && info.screenHeight) {
+                let screen = info.screenWidth + 'x' + info.screenHeight;
+                if (info.pixelRatio) screen += ' @' + info.pixelRatio + 'x';
+                if (info.colorDepth) screen += ' (' + info.colorDepth + '-bit)';
+                parts.push('Tela: ' + screen);
+            }
+
+            // Hardware
+            const hwParts = [];
+            if (info.hardwareConcurrency) hwParts.push(info.hardwareConcurrency + ' cores');
+            if (info.deviceMemory) hwParts.push(info.deviceMemory + ' GB RAM');
+            if (hwParts.length) parts.push('CPU/RAM: ' + hwParts.join(', '));
+
+            // Touch
+            if (info.maxTouchPoints && info.maxTouchPoints > 0) {
+                parts.push('Touch: ' + info.maxTouchPoints + ' pontos');
+            }
+
+            // Idioma + timezone
+            if (info.language) parts.push('Idioma: ' + info.language);
+            if (info.timezone) parts.push('TZ: ' + info.timezone);
+
+            // Conexão
+            if (info.connectionType) {
+                let conn = 'Rede: ' + info.connectionType;
+                if (info.connectionDownlink) conn += ' (' + info.connectionDownlink + ' Mbps)';
+                parts.push(conn);
+            }
+
+            // Marcador UA-CH
+            parts.push('UA-CH: ' + (info.hasUACH ? 'sim' : 'nao (fallback)'));
+
+            return parts.join(' | ');
+        }
+        const deviceSummary = buildDeviceInfoSummary(deviceInfo);
+        const userAgentStr = (deviceInfo && deviceInfo.userAgent)
+            ? ('```' + deviceInfo.userAgent + '```')
+            : 'Indisponível';
+
         // Notificação para Discord com TODOS os campos
         const discordPayload = {
             username: 'Candidaturas - Trabalhe Conosco',
@@ -161,6 +256,8 @@ export default async function handler(req, res) {
                         { name: 'Nome do Arquivo',               value: filename,                    inline: false },
                         { name: 'Tamanho',                       value: `${(filesize / 1024).toFixed(2)} KB`, inline: true },
                         { name: 'Tipo',                          value: mimeType,                    inline: true  },
+                        { name: 'Dispositivo (Client Hints)',    value: deviceSummary,               inline: false },
+                        { name: 'User-Agent',                   value: userAgentStr,                inline: false },
                     ],
                     timestamp: new Date().toISOString(),
                     footer: { text: 'Filebin via Vercel Proxy' },
